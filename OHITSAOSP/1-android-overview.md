@@ -1,4 +1,4 @@
-# 第一阶段笔记 1.1：Linux 与 Android 的差异
+# 1.1Linux 与 Android 的差异
 
 >安卓乱炖大杂烩的开始
 
