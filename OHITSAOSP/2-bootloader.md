@@ -215,8 +215,16 @@ Second-stage init -> 解析 init.rc，启动系统服务
 
 ---
 
+来源：
+[Android：SELinux 概述][SEL]：SELinux policy 的加载和强制访问控制机制
+[Linux：execve(2)][EXECV]：exec 系列系统调用的行为说明
+
+---
+
 初版2026-11-11
 
 [INIT]: https://cs.android.com/android/platform/superproject/+/android-latest-release:system/core/init/main.cpp?hl=zh-cn "源码网站"
 [EXEC]: https://www.bilibili.com/video/BV1hjkEBkEtb
 [SE]: https://cs.android.com/android/platform/superproject/+/android-latest-release:system/core/init/selinux.cpp;l=1?q=selinux.cpp&sq=&ss=android%2Fplatform%2Fsuperproject&hl=zh-cn "selinux.cpp line20~22"
+[SEL]:https://source.android.com/docs/security/features/selinux?hl=zh-cn
+[EXECV]:https://man7.org/linux/man-pages/man2/execve.2.html
