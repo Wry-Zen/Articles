@@ -1,44 +1,47 @@
-# 1.1Linux 与 Android 的差异
+# 一：Linux 与 Android 的差异
 
 >安卓乱炖大杂烩的开始
 
 ## Android 不是普通 Linux
 
-- Android 在 Linux Kernel 之上**重新设计了整个用户空间**。没有 systemd(服务管理器)、没有 glibc(C 标准库)、没有 /usr/lib、没有传统 /etc 配置目录
-- 我们常说的Linux系统全称更精确来说叫GNU/Linux，而安卓如果按照这种命名方式应该更接近于AOSP/Linux
-- 一个常见混淆：**AOSP ≠ Android**。AOSP 是开源项目，手机上的 Android = AOSP + 厂商定制，不同发行商的定制版本差距都很大尤其是国内的安卓系统。本系列从 AOSP 视角展开
+- Android 使用 Linux Kernel，但没有沿用 GNU/Linux 发行版的传统用户空间体系。它采用 Bionic 作为 C 库，以 Android init 管理系统启动和服务，并使用 Android 自己的属性系统、IPC 机制和目录布局。
+- 我们常说的Linux系统全称更精确来说叫GNU/Linux，而安卓如果禁用这种命名方式，不严谨的称呼可以叫做AOSP/Linux
+- AOSP ≠ 完整的商业 Android 产品。AOSP 提供 Android 的开源基础，实际设备通常还会包含 SoC 厂商组件、设备厂商定制，以及可能存在的 Google Mobile Services（GMS）等专有组件。不同厂商和地区的设备在此基础上的差异也比较明显。本系列主要从 AOSP 视角展开。
 
 ### 启动链对比
 
-```
-标准 Linux:
-UEFI → GRUB → Linux Kernel → initramfs/UKI → systemd → services → Shell
+```text
+GNU/Linux:
+UEFI → GRUB → Linux Kernel + initramfs → PID 1（systemd 等）
+     → System Services → Login Shell
 
 Android:
-BootROM → Bootloader(U-Boot) → Linux Kernel(+Android patches) → Android init → Native Daemons → Zygote → system_server → Framework → App
+BootROM → Bootloader → Linux Kernel + ramdisk
+       → Android init → Native Services
+       → Zygote → system_server → Framework → App
 ```
 
->注：Android 的 Bootloader 因 SoC 而异——本文平台(RK3588S)是 U-Boot，高通是 XBL/ABL，MTK 是 preloader/LK，详见 1.2
+>注：Android 的 Bootloader 因 SoC 而异——本文平台(RK3588S)是 U-Boot，高通是 XBL/ABL，MTK 是 preloader/LK
 
 ---
 
 ## 逐层差异表
 
->本节名词密集，混个脸熟即可，每个都会在后续章节逐个展开
+>本节名词密集，混个脸熟即可，后续章节会按需要展开
 
-| 层级 | 标准 Linux | Android | 关键差异 |
-|------|-----------|---------|----------|
-| 硬件初始化 | BIOS/UEFI | BootROM | SoC 固化代码，不可修改 |
-| 第二级引导 | GRUB/systemd-boot | U-Boot 等 | Android 侧通常含 Verified Boot(AVB) |
-| Kernel | Linux Kernel | + Android Patches + Vendor Drivers | Binder、共享内存、电源锁等(多数已逐步进入内核主线) |
-| PID 1 | systemd | Android init (system/core/init) | 设计哲学完全不同 |
-| 进程管理 | systemd units | init.rc services | 无 socket activation(按需唤醒)；cgroup 由 init 挂载、经 Task Profiles 管理(Android 10+) |
-| C 库 | glibc | Bionic | Android 有自己的 C 库 |
-| IPC | D-Bus, socket, pipe | Binder | Android 最核心的通信机制 |
-| 服务管理 | systemd | init(生命周期) + servicemanager(Binder 服务名录) + system_server(系统服务宿主) | 职责被拆开，而非单点统筹 |
-| 图形 | X11/Wayland | SurfaceFlinger | 合成器，经 Gralloc/HWC HAL 适配硬件 |
-| 包管理 | pacman/apt | PackageManager(APK) | .apk ≠ .pkg.tar.zst |
-| 文件系统 | FHS(/) | 动态分区(/system, /vendor, /data 为 super 内逻辑分区，Android 10+) | 分区隔离，对 OTA 友好 |
+| 层级 | GNU/Linux 发行版 | Android |
+| ------ | ----------- | --------- |
+| 硬件初始化 | BIOS/UEFI | SoC BootROM |
+| 引导 | GRUB等 | U-Boot、ABL、LK 等 |
+| 内核 | Linux | + Android 相关补丁及厂商驱动 |
+| PID 1 | systemd、SysV init 等 | Android init（/init） |
+| 服务管理 | systemd 等 | init + servicemanager + system_server |
+| C 库 | glibc等 | Bionic |
+| IPC | D-Bus socket pipe等 | Binder 为核心，同时使用 socket、共享内存等 |
+| 图形 | X11/Wayland | SurfaceFlinger + HWC HAL |
+| 应用管理 | apt、pacman、rpm 等 | PackageManager + APK |
+| 目录布局 | FHS(/) | Android 专用目录布局 |
+| 分区管理 | GPT 分区及发行版自身方案 | 静态分区、动态分区、A/B 等 |
 
 >Android 与 GNU/Linux 发行版的主要区别在 Kernel→PID 1 及以后；之前的差异更多源于 SoC(ARM) 的设备形态，会在后面讲到
 
@@ -47,7 +50,7 @@ BootROM → Bootloader(U-Boot) → Linux Kernel(+Android patches) → Android in
 ## 设计哲学差异
 
 | | 标准 Linux | Android |
-|---|-----------|---------|
+| --- | ----------- | --------- |
 | 目标 | 通用多用户 OS | 以应用为中心，每 app 独立 UID |
 | 设计优先级 | 兼容性、灵活性 | 性能、安全、资源效率 |
 | 配置方式 | 文本文件(/etc) | Android Property(key-value) |
@@ -65,7 +68,7 @@ BootROM → Bootloader(U-Boot) → Linux Kernel(+Android patches) → Android in
 ### 1. init.rc VS 通用服务管理框架
 
 - systemd 统筹一切：服务、定时器、状态监测、资源管理、日志，几乎接管整个系统
-- Android 只需要按声明式脚本启动一组固定的、有序的服务，同时尽可能降低性能需求和功耗——用不上 systemd 那样的通用性，也不愿付出它的复杂度
+- Android 只需要按声明式脚本启动一组固定的、有序的服务，同时尽可能降低性能需求和功耗，用不上 systemd 那样的通用性，也不愿付出它的复杂度
 
 ### 2. Binder VS socket/D-Bus
 
@@ -83,7 +86,7 @@ BootROM → Bootloader(U-Boot) → Linux Kernel(+Android patches) → Android in
 
 ## 什么是AOSP？
 
->AOSP 是把 Linux 内核当作**驱动层 + 进程隔离工具**，在它之上重造了一整个面向应用的系统：没有 glibc、没有 systemd、没有 D-Bus。没有了 PC 平台充裕的空间和能源，谷歌必须极限地压榨每一丝性能来让手机运行得久一点，更久一点
+>AOSP（Android Open Source Project）是 Android 的开源软件项目，包含 Linux Kernel 相关代码、用户空间系统组件、Framework、运行时以及应用开发接口等。Android 并不是在 Linux Kernel 之上简单替换几个系统工具，而是围绕移动设备重新构建了一整套操作系统架构。从 Bionic、Android init 到 Binder，再到 Zygote 和 Framework，这些组件共同构成了 Android 区别于传统 GNU/Linux 发行版的用户空间体系。
 
 ## 本系列路线
 
@@ -93,3 +96,4 @@ BootROM → Bootloader(U-Boot) → Linux Kernel(+Android patches) → Android in
 >两条线最终会在同一处汇合，所有的差异最终都会凝聚为AOSP
 
 初版2026-11-4
+二改2026-11-11
