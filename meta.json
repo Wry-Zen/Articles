@@ -1,21 +1,29 @@
 {
-  "version": 2,
+  "version": 3,
   "articles": [
     {
       "id": 1,
-      "path": "0/guide.md"
+      "path": "0/guide.md",
+      "title": "使用指南",
+      "sha": "50b7e8981192ec494bf9fbd81416ba20f51547dd"
     },
     {
       "id": 2,
-      "path": "1/milestone.md"
+      "path": "1/milestone.md",
+      "title": "项目里程碑",
+      "sha": "eb53ed705763639783cc30cbe0d278d6db840c86"
     },
     {
       "id": 3,
-      "path": "OHITSAOSP/1-android-overview.md"
+      "path": "OHITSAOSP/1-android-overview.md",
+      "title": "一：Linux 与 Android 的差异",
+      "sha": "d38ea238663605b5acf0d3dbe404a17e7004f521"
     },
     {
       "id": 4,
-      "path": "OHITSAOSP/2-bootloader.md"
+      "path": "OHITSAOSP/2-bootloader.md",
+      "title": "二：Bootloader",
+      "sha": "c48c778dbbb49249d82978453fe8e9e85e9c4474"
     }
   ]
 }
